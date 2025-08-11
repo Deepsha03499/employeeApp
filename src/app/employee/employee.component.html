@@ -1,0 +1,189 @@
+<div *ngIf="isLoading" class="loader-overlay">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+
+<div class="container my-4">
+  <div class="mb-3">
+      <h2 style="border-bottom: 0.1rem solid;padding: 5px;">Employee Management</h2>
+  </div>
+  <div class="row mb-3 align-items-center">
+    <div class="col-md-6 d-flex align-items-center gap-2">
+    <input
+      type="text"
+      class="form-control"
+      placeholder="Search employees..."
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onSearchChange()"
+    />
+    <button class="btn btn-outline-dark" (click)="openModal()">Add&nbsp;New</button>
+    </div>
+    <div class="col-md-6 text-end">
+      <span>Total Records: {{ totalCount }}</span>
+    </div>
+  </div>
+  <table class="table table-striped table-bordered table-hover">
+  <thead class="table-dark">
+    <tr>
+      <th>S. No.</th>
+      <th>Name</th>
+      <th>Department</th>
+      <th>Email</th>
+      <th>Phone Number</th>
+      <th colspan="2">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Show employee rows if there are employees -->
+    <ng-container *ngIf="employees.length > 0">
+      <tr *ngFor="let emp of employees; let i = index">
+        <td>{{ (pageNo - 1) * pageSize + i + 1 }}</td>
+        <td>{{ emp.name }}</td>
+        <td>{{ emp.departmentName }}</td>
+        <td>{{ emp.email }}</td>
+        <td>{{ emp.phone_Number }}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-info" (click)="editModal(emp)">Edit</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger" (click)="openDeleteModal(emp.employee_Id)">Delete</button>
+        </td>
+      </tr>
+    </ng-container>
+    <!-- Show message when no records are found -->
+    <tr *ngIf="employees.length === 0">
+      <td colspan="7" class="text-center text-muted">No records found.</td>
+    </tr>
+  </tbody>
+</table>
+
+  <div class="d-flex justify-content-between align-items-center">
+    <p class="mb-0">
+      Page {{ pageNo }} of {{ Math.ceil(totalCount / pageSize) }}
+    </p>
+    <div class="d-flex">
+      <label for="pageSizeSelect" class="col-auto col-form-label">Page Size:</label>
+    <div class="col-auto">
+      <select id="pageSizeSelect" class="form-select" (change)="onPageSizeChange($event)" [value]="pageSize">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+      </select>
+    </div>
+    </div>
+    <div>
+      <button class="btn btn-outline-secondary me-2" (click)="goToPage(pageNo - 1)" [disabled]="pageNo === 1">Previous</button>
+      <button class="btn btn-outline-secondary" (click)="goToPage(pageNo + 1)" [disabled]="pageNo === Math.ceil(totalCount / pageSize)">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- modal for adding/editing employee -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" [ngClass]="{'show': formModal}" [style.display]="formModal ? 'block' : 'none'">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header justify-content-between" style="padding: 0.5rem 1.5rem;">
+            <h5 class="modal-title">
+            {{ employeeForm.get('Employee_Id')?.value ? 'Edit Employee' : 'Add Employee' }}
+            </h5>
+            <button type="button" class="btn btn-outline-danger" (click)="closeModal()">X</button>
+          </div>
+          <div class="modal-body">
+            <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()">
+              <div class="row g-3">
+                <!-- Name -->
+                <div class="col-md-6">
+                  <label for="Name" class="form-label">Name <span class="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    id="Name"
+                    formControlName="Name"
+                    class="form-control"
+                    maxlength="100"
+                    placeholder="Enter your name"
+                  />
+                  <div class="text-danger mt-1" *ngIf="employeeForm.get('Name')?.invalid && (employeeForm.get('Name')?.touched || employeeForm.get('Name')?.dirty)">
+                    <div *ngIf="employeeForm.get('Name')?.errors?.['required']">Name is required.</div>
+                    <div *ngIf="employeeForm.get('Name')?.errors?.['pattern']">Only alphabets and spaces are allowed.</div>
+                  </div>
+                </div>
+                <!-- Department -->
+                <div class="col-md-6">
+                  <label for="DepartmentId" class="form-label">Department</label>
+                  <select
+                    class="form-control"
+                    id="DepartmentId"
+                    formControlName="DepartmentId"
+                  >
+                    <option value="0">Select</option>
+                    <option *ngFor="let o of departments" [value]="o.deptId">
+                      {{ o.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            <div class="row g-3 mt-2">
+              <!-- Email -->
+              <div class="col-md-6">
+                <label for="Email" class="form-label">Email <span class="text-danger">*</span></label>
+                <input
+                  type="email"
+                  id="Email"
+                  formControlName="Email"
+                  class="form-control"
+                  maxlength="100"
+                  placeholder="Enter your email"
+                />
+                <div class="text-danger mt-1" *ngIf="employeeForm.get('Email')?.invalid && (employeeForm.get('Email')?.touched || employeeForm.get('Email')?.dirty)">
+                  <div *ngIf="employeeForm.get('Email')?.errors?.['required']">Email is required.</div>
+                  <div *ngIf="employeeForm.get('Email')?.errors?.['pattern']">Enter a valid email address.</div>
+                </div>
+              </div>
+              <!-- Phone Number -->
+              <div class="col-md-6">
+                <label for="Phone_Number" class="form-label">Phone No. <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  id="Phone_Number"
+                  formControlName="Phone_Number"
+                  class="form-control"
+                  placeholder="Enter your phone no."
+                  maxlength="10"
+                />
+                <div class="text-danger mt-1" *ngIf="employeeForm.get('Phone_Number')?.invalid && (employeeForm.get('Phone_Number')?.touched || employeeForm.get('Phone_Number')?.dirty)">
+                  <div *ngIf="employeeForm.get('Phone_Number')?.errors?.['required']">Phone number is required.</div>
+                  <div *ngIf="employeeForm.get('Phone_Number')?.errors?.['pattern']">Phone number must be 10 digits and cannot start with 0.</div>
+                </div>
+              </div>
+              </div>
+            <div class="row justify-content-center mt-4">
+              <div class="col-md-6">
+                <button type="submit" class="btn btn-outline-dark btn-block" style="width: 100%;" [disabled]="employeeForm.invalid">
+                  {{ employeeForm.get('Employee_Id')?.value ? 'Update' : 'Save' }}
+                </button>
+              </div>
+              </div>
+            </form>
+          </div>
+      </div>
+    </div>
+</div>
+
+<!-- modal for delete employee -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" [ngClass]="{'show': deleteModal}" [style.display]="deleteModal ? 'block' : 'none'">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header" style="padding: 0.5rem 1.5rem;">
+            <h5 class="modal-title">
+              Confrim Delete
+            </h5>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this employee?</p>
+            <div class="d-flex justify-content-center gap-2">
+              <button type="button" class="btn btn-secondary" (click)="closeModal()">No</button>
+              <button type="button" class="btn btn-danger" (click)="confirmDelete()">Yes</button>
+            </div>
+          </div>
+      </div>
+    </div>
+</div>
